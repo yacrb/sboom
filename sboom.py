@@ -1,0 +1,60 @@
+"""Command-line entry point for a local supply-chain review."""
+import argparse
+import json
+import sys
+from pathlib import Path
+
+from intelligence import enrich
+from inventory import MAX_BYTES, compare, parse, read_json, scan
+from security import bounded, verify
+
+
+def analyze(doc, online=False):
+    report = parse(doc)
+    return enrich(report) if online else report
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(prog="sboom", description=__doc__)
+    commands = parser.add_subparsers(dest="command", required=True)
+    for name, paths in [("analyze", ["sbom"]), ("scan", ["directory"]), ("compare", ["old", "new"])]:
+        sub = commands.add_parser(name)
+        for path in paths:
+            sub.add_argument(path, type=Path)
+        sub.add_argument("--online", action="store_true", help="Send package names and versions to OSV; look up CVEs with FIRST and CISA.")
+    sub = commands.add_parser("verify")
+    sub.add_argument("artifact", type=Path)
+    sub.add_argument("--key", type=Path, help="Independently trusted RSA public key (PEM)")
+    evidence = sub.add_mutually_exclusive_group()
+    evidence.add_argument("--attestation", type=Path, help="DSSE envelope or plain in-toto statement")
+    evidence.add_argument("--signature", type=Path, help="Detached RSA/SHA-256 signature")
+    sub = commands.add_parser("dashboard")
+    sub.add_argument("--project", type=Path, help="One directory to make available to Syft")
+    sub.add_argument("--port", type=int, default=8765)
+    args = parser.parse_args(argv)
+
+    def load(path):
+        return analyze(read_json(bounded(path, MAX_BYTES)), args.online)
+
+    try:
+        if args.command == "dashboard":
+            from app import serve
+            serve(args.project, args.port)
+            return 0
+        if args.command == "scan":
+            result = analyze(scan(args.directory), args.online)
+        elif args.command == "analyze":
+            result = load(args.sbom)
+        elif args.command == "compare":
+            result = compare(load(args.old), load(args.new))
+        else:
+            result = verify(args.artifact, args.key, args.attestation, args.signature)
+        print(json.dumps(result, indent=2, allow_nan=False))
+        return int(args.command == "verify" and result["status"] != "verified")
+    except (OSError, ValueError) as exc:
+        print(f"sboom: {exc}", file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())
