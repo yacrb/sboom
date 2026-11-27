@@ -1,4 +1,5 @@
 """Loopback dashboard. Browser requests may scan only the operator's chosen directory."""
+
 import os
 import tempfile
 from pathlib import Path
@@ -7,7 +8,7 @@ from urllib.parse import urlsplit
 from flask import Flask, jsonify, request, send_from_directory
 from werkzeug.exceptions import HTTPException
 
-from inventory import MAX_BYTES, read_json, scan
+from inventory import MAX_BYTES, compare, read_json, scan
 from ml.predict import benchmark
 from sboom import analyze
 from security import verify
@@ -17,20 +18,29 @@ WEB = Path(__file__).with_name("web")
 
 def create_app(project=None):
     app = Flask(__name__, static_folder=None)
-    app.config.update(MAX_CONTENT_LENGTH=MAX_BYTES, TRUSTED_HOSTS=["localhost", "127.0.0.1", "[::1]"])
+    app.config.update(
+        MAX_CONTENT_LENGTH=MAX_BYTES, TRUSTED_HOSTS=["localhost", "127.0.0.1", "[::1]"]
+    )
 
     @app.before_request
     def local_request():
         if request.method == "POST":
             origin = request.headers.get("Origin")
-            if request.headers.get("X-SBoom") != "local" or (origin and urlsplit(origin).netloc != request.host):
+            if request.headers.get("X-SBoom") != "local" or (
+                origin and urlsplit(origin).netloc != request.host
+            ):
                 return jsonify(error="local_only"), 403
 
     @app.after_request
     def headers(response):
-        response.headers.update({"Content-Security-Policy": "default-src 'self'; style-src 'self' 'unsafe-inline'; object-src 'none'; frame-ancestors 'none'; base-uri 'none'",
-                                 "X-Content-Type-Options": "nosniff", "Referrer-Policy":"no-referrer",
-                                 "Cache-Control":"no-store"})
+        response.headers.update(
+            {
+                "Content-Security-Policy": "default-src 'self'; style-src 'self' 'unsafe-inline'; object-src 'none'; frame-ancestors 'none'; base-uri 'none'",
+                "X-Content-Type-Options": "nosniff",
+                "Referrer-Policy": "no-referrer",
+                "Cache-Control": "no-store",
+            }
+        )
         return response
 
     @app.errorhandler(ValueError)
@@ -60,8 +70,16 @@ def create_app(project=None):
             return jsonify(analyze(read_json(request.get_data()), online))
         if action == "example":
             return jsonify(analyze(read_json((WEB / "example.json").read_bytes()), online))
+        if action == "compare":
+            if not {"before", "after"} <= request.files.keys():
+                raise ValueError("pickFile")
+            before = analyze(read_json(request.files["before"].read()), online)
+            after = analyze(read_json(request.files["after"].read()), online)
+            after["changes"] = compare(before, after)
+            return jsonify(after)
         if action == "scan" and project:
-            return jsonify(analyze(scan(project), online))
+            document = scan(project)
+            return jsonify(dict(analyze(document, online), generated_sbom=document))
         if action == "verify":
             with tempfile.TemporaryDirectory() as tmp:
                 files = {}
@@ -74,11 +92,13 @@ def create_app(project=None):
                     raise ValueError("artifact_required")
                 return jsonify(verify(**files))
         raise ValueError("request_failed")
+
     return app
 
 
 def serve(project=None, port=8765):
     from waitress import serve as run
+
     host = "0.0.0.0" if os.environ.get("SBOOM_CONTAINER") == "1" else "127.0.0.1"
     print(f"SBoom is listening at http://localhost:{port}", flush=True)
     run(create_app(project), host=host, port=port, threads=4, max_request_body_size=MAX_BYTES)

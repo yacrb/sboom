@@ -1,4 +1,5 @@
 """Read dependency identities and edges without executing project code."""
+
 import json
 import os
 import shutil
@@ -13,8 +14,16 @@ from ml.predict import predict
 
 LIMIT = 5_000
 MAX_BYTES = 12 * 1024 * 1024
-ECOSYSTEMS = {"npm":"npm", "pypi":"PyPI", "maven":"Maven", "golang":"Go",
-              "cargo":"crates.io", "gem":"RubyGems", "nuget":"NuGet", "composer":"Packagist"}
+ECOSYSTEMS = {
+    "npm": "npm",
+    "pypi": "PyPI",
+    "maven": "Maven",
+    "golang": "Go",
+    "cargo": "crates.io",
+    "gem": "RubyGems",
+    "nuget": "NuGet",
+    "composer": "Packagist",
+}
 
 
 def read_json(data):
@@ -44,7 +53,11 @@ def parse(doc):
     components, roots, edges = {}, set(), set()
 
     def add(raw, ref, purl, hashes):
-        name, version, ecosystem = raw.get("name"), raw.get("version", raw.get("versionInfo", "")), "unknown"
+        name, version, ecosystem = (
+            raw.get("name"),
+            raw.get("version", raw.get("versionInfo", "")),
+            "unknown",
+        )
         if not isinstance(name, str) or not name or not isinstance(version, str):
             raise ValueError("invalid_sbom")
         if purl:
@@ -63,12 +76,24 @@ def parse(doc):
             raise ValueError("invalid_reference")
         if len(components) >= LIMIT or max(len(name), len(version)) > 1024:
             raise ValueError("too_large")
-        digests = {h.get("content", h.get("checksumValue", "")).lower() for h in items(hashes)
-                   if str(h.get("alg", h.get("algorithm"))).replace("-", "").upper() == "SHA256"
-                   and isinstance(h.get("content", h.get("checksumValue")), str)}
-        components[ref] = dict(id=ref, name=name, version=version, ecosystem=ecosystem, depth=None,
-                               sha256=sorted(digests), provenance="missing", intelligence="offline",
-                               advisories=[], prediction=predict(name, version) if ecosystem == "npm" else None)
+        digests = {
+            h.get("content", h.get("checksumValue", "")).lower()
+            for h in items(hashes)
+            if str(h.get("alg", h.get("algorithm"))).replace("-", "").upper() == "SHA256"
+            and isinstance(h.get("content", h.get("checksumValue")), str)
+        }
+        components[ref] = dict(
+            id=ref,
+            name=name,
+            version=version,
+            ecosystem=ecosystem,
+            depth=None,
+            sha256=sorted(digests),
+            provenance="missing",
+            intelligence="offline",
+            advisories=[],
+            prediction=predict(name, version) if ecosystem == "npm" else None,
+        )
 
     if doc.get("bomFormat") == "CycloneDX" and isinstance(doc.get("specVersion"), str):
         kind = "CycloneDX"
@@ -93,29 +118,41 @@ def parse(doc):
         kind, title = "SPDX", doc.get("name") or "SPDX"
         roots.update(strings(doc.get("documentDescribes", [])))
         for raw in items(doc.get("packages", [])):
-            purl = next((r.get("referenceLocator") for r in items(raw.get("externalRefs", []))
-                         if r.get("referenceType") == "purl"), None)
+            purl = next(
+                (
+                    r.get("referenceLocator")
+                    for r in items(raw.get("externalRefs", []))
+                    if r.get("referenceType") == "purl"
+                ),
+                None,
+            )
             add(raw, raw.get("SPDXID"), purl, raw.get("checksums", []))
         for rel in items(doc.get("relationships", [])):
-            a,b,t = rel.get("spdxElementId"),rel.get("relatedSpdxElement"),rel.get("relationshipType")
-            if not all(isinstance(x,str) for x in (a,b,t)):
+            a, b, t = (
+                rel.get("spdxElementId"),
+                rel.get("relatedSpdxElement"),
+                rel.get("relationshipType"),
+            )
+            if not all(isinstance(x, str) for x in (a, b, t)):
                 raise ValueError("invalid_reference")
             if t == "DESCRIBES" and a == doc.get("SPDXID"):
                 roots.add(b)
             elif t == "DESCRIBED_BY" and b == doc.get("SPDXID"):
                 roots.add(a)
             elif t == "DEPENDS_ON":
-                edges.add((a,b))
+                edges.add((a, b))
             elif t == "DEPENDENCY_OF":
-                edges.add((b,a))
+                edges.add((b, a))
     else:
         raise ValueError("unsupported_format")
     if not isinstance(title, str):
         raise ValueError("invalid_sbom")
+    if len(edges) > 50_000:
+        raise ValueError("too_large")
     valid = components.keys() | roots
-    edges = sorted((a,b) for a,b in edges if a in valid and b in valid)
+    edges = sorted((a, b) for a, b in edges if a in valid and b in valid)
     children = defaultdict(list)
-    for a,b in edges:
+    for a, b in edges:
         children[a].append(b)
     queue = deque((r, 0) for r in roots)
     visited = set()
@@ -126,8 +163,14 @@ def parse(doc):
         visited.add(node)
         if node in components:
             components[node]["depth"] = depth
-        queue.extend((child, depth+1) for child in children[node] if child not in visited)
-    return dict(title=title, format=kind, roots=sorted(roots), edges=edges, components=list(components.values()))
+        queue.extend((child, depth + 1) for child in children[node] if child not in visited)
+    return dict(
+        title=title,
+        format=kind,
+        roots=sorted(roots),
+        edges=edges,
+        components=list(components.values()),
+    )
 
 
 def scan(directory):
@@ -140,8 +183,13 @@ def scan(directory):
         output = Path(tmp, "inventory.json")
         env = dict(os.environ, SYFT_CHECK_FOR_APP_UPDATE="false")
         try:
-            proc = subprocess.run(["syft", "scan", f"dir:{path}", "-o", f"cyclonedx-json={output}"],
-                                  env=env, cwd=tmp, capture_output=True, timeout=180)
+            proc = subprocess.run(
+                ["syft", "scan", f"dir:{path}", "-o", f"cyclonedx-json={output}"],
+                env=env,
+                cwd=tmp,
+                capture_output=True,
+                timeout=180,
+            )
         except subprocess.TimeoutExpired:
             raise ValueError("scan_timeout") from None
         if proc.returncode or not output.exists():
@@ -155,10 +203,22 @@ def compare(old, new):
     def summary(report):
         result = defaultdict(list)
         for c in report["components"]:
-            result[(c["ecosystem"], c["name"])].append(dict(version=c["version"],
-                score=c["prediction"]["score"] if c["prediction"] else None,
-                advisories=sorted(a["id"] for a in c["advisories"]), intelligence=c["intelligence"]))
-        return {k: sorted(v, key=lambda r: (r["version"],str(r["advisories"]))) for k,v in result.items()}
-    a,b = summary(old),summary(new)
-    return [dict(ecosystem=k[0], name=k[1], before=a.get(k, []), after=b.get(k, []))
-            for k in sorted(a.keys() | b.keys()) if a.get(k) != b.get(k)]
+            result[(c["ecosystem"], c["name"])].append(
+                dict(
+                    version=c["version"],
+                    score=c["prediction"]["score"] if c["prediction"] else None,
+                    advisories=sorted(a["id"] for a in c["advisories"]),
+                    intelligence=c["intelligence"],
+                )
+            )
+        return {
+            k: sorted(v, key=lambda r: (r["version"], str(r["advisories"])))
+            for k, v in result.items()
+        }
+
+    a, b = summary(old), summary(new)
+    return [
+        dict(ecosystem=k[0], name=k[1], before=a.get(k, []), after=b.get(k, []))
+        for k in sorted(a.keys() | b.keys())
+        if a.get(k) != b.get(k)
+    ]
