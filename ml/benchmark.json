@@ -1,0 +1,155 @@
+{
+  "winner": "Random forest",
+  "features": [
+    "name_length",
+    "digit_fraction",
+    "separators",
+    "scoped",
+    "core_similarity",
+    "log_major",
+    "log_minor",
+    "log_patch",
+    "prerelease"
+  ],
+  "probability": true,
+  "sha256": "1b13f043d5578487a3338230ace1025916ee9a00af79dfbadc04256aff83afe7",
+  "training": 989,
+  "testing": 248,
+  "positive": 612,
+  "negative": 625,
+  "cutoff": "2026-04-24",
+  "results": {
+    "Prior baseline": {
+      "cv_ap": 0.5544634488214706,
+      "accuracy": 0.4475806451612903,
+      "precision": 0.4475806451612903,
+      "recall": 1.0,
+      "f1": 0.6183844011142061,
+      "roc_auc": 0.5,
+      "average_precision": 0.4475806451612903,
+      "brier": 0.2507322260182138,
+      "confusion": [
+        [
+          0,
+          137
+        ],
+        [
+          0,
+          111
+        ]
+      ]
+    },
+    "Logistic regression": {
+      "cv_ap": 0.761869332783752,
+      "accuracy": 0.6733870967741935,
+      "precision": 0.6229508196721312,
+      "recall": 0.6846846846846847,
+      "f1": 0.6523605150214592,
+      "roc_auc": 0.7632340369566646,
+      "average_precision": 0.7270924691243605,
+      "brier": 0.197981151328468,
+      "confusion": [
+        [
+          91,
+          46
+        ],
+        [
+          35,
+          76
+        ]
+      ]
+    },
+    "K-nearest neighbors": {
+      "cv_ap": 0.7575569960967122,
+      "accuracy": 0.6693548387096774,
+      "precision": 0.6198347107438017,
+      "recall": 0.6756756756756757,
+      "f1": 0.646551724137931,
+      "roc_auc": 0.7267376865917011,
+      "average_precision": 0.6487581361435976,
+      "brier": 0.21679609717244125,
+      "confusion": [
+        [
+          91,
+          46
+        ],
+        [
+          36,
+          75
+        ]
+      ]
+    },
+    "Decision tree": {
+      "cv_ap": 0.7703773045892345,
+      "accuracy": 0.6895161290322581,
+      "precision": 0.6103896103896104,
+      "recall": 0.8468468468468469,
+      "f1": 0.7094339622641509,
+      "roc_auc": 0.7709278621687381,
+      "average_precision": 0.7360834471810433,
+      "brier": 0.19204788334252176,
+      "confusion": [
+        [
+          77,
+          60
+        ],
+        [
+          17,
+          94
+        ]
+      ]
+    },
+    "Random forest": {
+      "cv_ap": 0.8462020905645704,
+      "accuracy": 0.7096774193548387,
+      "precision": 0.648854961832061,
+      "recall": 0.7657657657657657,
+      "f1": 0.7024793388429752,
+      "roc_auc": 0.8137370947589926,
+      "average_precision": 0.7894324377211632,
+      "brier": 0.1818876808127862,
+      "confusion": [
+        [
+          91,
+          46
+        ],
+        [
+          26,
+          85
+        ]
+      ]
+    },
+    "Support vector machine": {
+      "cv_ap": 0.8228056039286505,
+      "accuracy": 0.6975806451612904,
+      "precision": 0.6363636363636364,
+      "recall": 0.7567567567567568,
+      "f1": 0.691358024691358,
+      "roc_auc": 0.7936805418557242,
+      "average_precision": 0.7672610903092266,
+      "brier": null,
+      "confusion": [
+        [
+          89,
+          48
+        ],
+        [
+          27,
+          84
+        ]
+      ]
+    }
+  },
+  "importance": {
+    "name_length": 0.028634131029262332,
+    "digit_fraction": 0.024273048392106998,
+    "separators": 0.0003177572080959701,
+    "scoped": 0.010607365015415527,
+    "core_similarity": 0.025118946772376118,
+    "log_major": 0.1508363874418344,
+    "log_minor": 0.04740189021655641,
+    "log_patch": 0.051338912557793395,
+    "prerelease": -0.00013215832190887066
+  },
+  "dataset_sha256": "13c70a27cc490bff8e68a7f3421aec69f9a12540e58761c82e97e4b861c9b5f1"
+}
