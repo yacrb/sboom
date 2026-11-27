@@ -1,12 +1,29 @@
 """Release identifiers survive registry takedowns and are available offline."""
+
 import math
 import re
 from difflib import SequenceMatcher
 
 # Long-established Node core libraries. Keep this vocabulary fixed across splits.
-CORE = ("assert", "buffer", "crypto", "events", "http", "https", "module",
-        "path", "process", "stream", "string_decoder", "timers", "util", "zlib")
-SEMVER = re.compile(r"(0|[1-9]\d{0,8})\.(0|[1-9]\d{0,8})\.(0|[1-9]\d{0,8})(-[\w.-]+)?(?:\+[\w.-]+)?", re.ASCII)
+CORE = (
+    "assert",
+    "buffer",
+    "crypto",
+    "events",
+    "http",
+    "https",
+    "module",
+    "path",
+    "process",
+    "stream",
+    "string_decoder",
+    "timers",
+    "util",
+    "zlib",
+)
+SEMVER = re.compile(
+    r"(0|[1-9]\d{0,8})\.(0|[1-9]\d{0,8})\.(0|[1-9]\d{0,8})(-[\w.-]+)?(?:\+[\w.-]+)?", re.ASCII
+)
 
 
 def extract(name, version):

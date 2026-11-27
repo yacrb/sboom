@@ -36,10 +36,15 @@ def predict(name, version):
     keys = benchmark()["features"]
     variants = np.repeat(x, len(keys) + 1, axis=0)
     for index, key in enumerate(keys):
-        variants[index+1, index] = benchmark()["medians"][key]
+        variants[index + 1, index] = benchmark()["medians"][key]
     label, values = model.run(None, {model.get_inputs()[0].name: variants})
     score = float(values[0, 1])
-    deltas = sorted(((key, score-float(v)) for key,v in zip(keys,values[1:,1])),
-                    key=lambda item: -item[1])
-    return dict(review=bool(label[0]), score=score, features=features,
-                signals=[dict(feature=k, difference=d) for k,d in deltas[:3] if d > 0.001])
+    deltas = sorted(
+        ((key, score - float(v)) for key, v in zip(keys, values[1:, 1])), key=lambda item: -item[1]
+    )
+    return dict(
+        review=bool(label[0]),
+        score=score,
+        features=features,
+        signals=[dict(feature=k, difference=d) for k, d in deltas[:3] if d > 0.001],
+    )
