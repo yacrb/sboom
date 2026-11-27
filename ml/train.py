@@ -82,10 +82,11 @@ def train(frame):
     # Export numerical operators. The application never unpickles model files.
     options = {id(model.steps[-1][1] if hasattr(model, "steps") else model): {"zipmap": False}}
     graph = to_onnx(model, early[FEATURES].iloc[:1].to_numpy(dtype=np.float32), options=options,
-                    target_opset=17).SerializeToString()
+                    name="SBoomNpmClassifier", target_opset=17).SerializeToString()
     (HERE / "model.onnx").write_bytes(graph)
     report = dict(winner=winner, features=FEATURES, probability=hasattr(model, "predict_proba"),
-                  sha256=hashlib.sha256(graph).hexdigest(), training=len(early), testing=len(test),
+                  sha256=hashlib.sha256(graph).hexdigest(), medians=early[FEATURES].median().to_dict(),
+                  training=len(early), testing=len(test),
                   positive=int(frame.label.sum()), negative=int((frame.label == 0).sum()),
                   cutoff=test.observed.min(), results=results,
                   importance=dict(zip(FEATURES, importance.importances_mean)),

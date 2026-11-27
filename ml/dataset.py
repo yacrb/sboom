@@ -126,6 +126,25 @@ def build():
     return frame
 
 
+def compromised_probe(used):
+    """A positive-only transfer check on a different kind of documented release."""
+    tree = fetch("https://api.github.com/repos/DataDog/malicious-software-packages-dataset/"
+                 "git/trees/fa24c97c54835d563042b73acba6b1985f8a929e?recursive=1")
+    if tree["truncated"]:
+        raise ValueError("Incomplete compromise index")
+    pairs = set()
+    for row in tree["tree"]:
+        parts = row["path"].split("/")
+        if len(parts) != 3 or not parts[2].endswith(".zip") or parts[2][:10] > CUTOFF:
+            continue
+        name, version = parts[:2]
+        if name.startswith("@"):
+            name = "@" + name[1:].replace("@", "/", 1)
+        if family(name) not in used and extract(name, version):
+            pairs.add((name, version))
+    return sorted(pairs)
+
+
 def release_intervals():
     rows = []
     for name in ["express", "chalk", "eslint", "typescript", "rollup", "vite"]:

@@ -12,7 +12,18 @@
     "prerelease"
   ],
   "probability": true,
-  "sha256": "1b13f043d5578487a3338230ace1025916ee9a00af79dfbadc04256aff83afe7",
+  "sha256": "39b29a9f9cda93d67fe7c43263dd66128369eba23d24944451dbec38a6907fcf",
+  "medians": {
+    "name_length": 13.0,
+    "digit_fraction": 0.0,
+    "separators": 1.0,
+    "scoped": 0.0,
+    "core_similarity": 0.36363636363636365,
+    "log_major": 1.0986122886681098,
+    "log_minor": 0.0,
+    "log_patch": 0.6931471805599453,
+    "prerelease": 0.0
+  },
   "training": 989,
   "testing": 248,
   "positive": 612,
