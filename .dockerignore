@@ -1,0 +1,14 @@
+**
+!Dockerfile
+!pyproject.toml
+!README.md
+!LICENSE
+!*.py
+!ml/
+!ml/*.py
+!ml/model.onnx
+!ml/benchmark.json
+!ml/sboom.ipynb
+!web/
+!web/*
+web/__pycache__/

@@ -1,0 +1,10 @@
+services:
+  sboom:
+    build: .
+    ports:
+      - "127.0.0.1:8765:8765"
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL

@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sboom"
+version = "0.1.0"
+description = "Local SBOM review with offline npm risk scoring"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.11"
+dependencies = ["Flask>=3.1,<4", "waitress>=3,<4", "numpy>=1.26,<3", "onnxruntime>=1.20,<2", "requests>=2.32,<3", "packageurl-python>=0.16,<2"]
+
+[project.optional-dependencies]
+research = ["numpy==2.2.6", "scikit-learn==1.7.2", "pandas==2.2.3", "matplotlib==3.10.3", "seaborn==0.13.2", "skl2onnx==1.20.0", "ipykernel", "nbconvert"]
+test = ["pytest>=8"]
+
+[project.scripts]
+sboom = "sboom:main"
+
+[tool.setuptools]
+py-modules = ["sboom", "app", "inventory", "security", "intelligence"]
+packages = ["ml", "web"]
+
+[tool.setuptools.package-data]
+ml = ["model.onnx", "benchmark.json", "sboom.ipynb"]
+web = ["*.html", "*.css", "*.js", "*.json", "*.png"]
